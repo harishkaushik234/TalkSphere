@@ -1,12 +1,15 @@
-
 import { upsertStreamUser } from "../lib/stream.js";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
+/* =========================
+   SIGNUP
+========================= */
 export async function signup(req, res) {
   const { email, password, fullName } = req.body;
 
   try {
+    // ✅ Validation
     if (!email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -29,7 +32,7 @@ export async function signup(req, res) {
         .json({ message: "Email already exists, please use a different one" });
     }
 
-    // ✅ FIXED AVATAR (NO BROKEN DOMAIN)
+    // ✅ Avatar
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
       fullName
     )}&background=random`;
@@ -41,38 +44,42 @@ export async function signup(req, res) {
       profilePic: avatar,
     });
 
-    // Stream user create
+    // ✅ Stream user
     try {
       await upsertStreamUser({
         id: newUser._id.toString(),
         name: newUser.fullName,
         image: newUser.profilePic,
       });
-      console.log(`Stream user created for ${newUser.fullName}`);
     } catch (error) {
-      console.log("Error creating Stream user:", error.message);
+      console.log("Stream user create error:", error.message);
     }
 
+    // ✅ JWT
     const token = jwt.sign(
       { userId: newUser._id },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "7d" }
     );
 
+    // 🔥 PRODUCTION-SAFE COOKIE (VERY IMPORTANT)
     res.cookie("jwt", token, {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
+      secure: true,          // ✅ REQUIRED on HTTPS (Render)
+      sameSite: "none",      // ✅ REQUIRED for cross-site (Vercel ↔ Render)
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(201).json({ success: true, user: newUser });
   } catch (error) {
-    console.log("Error in signup controller", error);
+    console.log("Error in signup controller:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
+/* =========================
+   LOGIN
+========================= */
 export async function login(req, res) {
   try {
     const { email, password } = req.body;
@@ -95,25 +102,36 @@ export async function login(req, res) {
       { expiresIn: "7d" }
     );
 
+    // 🔥 SAME COOKIE SETTINGS HERE ALSO
     res.cookie("jwt", token, {
-      maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
+      sameSite: "none",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({ success: true, user });
   } catch (error) {
-    console.log("Error in login controller", error.message);
+    console.log("Error in login controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
+/* =========================
+   LOGOUT
+========================= */
 export function logout(req, res) {
-  res.clearCookie("jwt");
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
   res.status(200).json({ success: true, message: "Logout successful" });
 }
 
+/* =========================
+   ONBOARD
+========================= */
 export async function onboard(req, res) {
   try {
     const userId = req.user._id;
@@ -123,13 +141,6 @@ export async function onboard(req, res) {
     if (!fullName || !bio || !nativeLanguage || !learningLanguage || !location) {
       return res.status(400).json({
         message: "All fields are required",
-        missingFields: [
-          !fullName && "fullName",
-          !bio && "bio",
-          !nativeLanguage && "nativeLanguage",
-          !learningLanguage && "learningLanguage",
-          !location && "location",
-        ].filter(Boolean),
       });
     }
 
@@ -151,14 +162,8 @@ export async function onboard(req, res) {
         name: updatedUser.fullName,
         image: updatedUser.profilePic,
       });
-      console.log(
-        `Stream user updated after onboarding for ${updatedUser.fullName}`
-      );
     } catch (streamError) {
-      console.log(
-        "Error updating Stream user during onboarding:",
-        streamError.message
-      );
+      console.log("Stream update error:", streamError.message);
     }
 
     res.status(200).json({ success: true, user: updatedUser });

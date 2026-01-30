@@ -1,4 +1,8 @@
-<h1 align="center">✨ Fullstack Chat & Video Calling App ✨</h1>
+<h1 align="center">✨ 🌐 TalkSphere  ✨</h1>
+
+Real-Time Video Calling & Chat Application
+
+TalkSphere ek modern real-time communication platform hai jisme users video calls, voice calls aur live chat kar sakte hain smoothly. Ye project real-world apps jaise Zoom / Google Meet se inspired hai, aur latest web technologies ka use karta hai.
 
 Highlights:
 
@@ -9,9 +13,7 @@ Highlights:
 - ⚡ Tech Stack: React + Express + MongoDB + TailwindCSS + TanStack Query
 - 🧠 Global State Management with Zustand
 - 🚨 Error Handling (Frontend & Backend)
-- 🚀 Free Deployment
 - 🎯 Built with Scalable Technologies like Stream
-- ⏳ And much more!
 
 ---
 
@@ -51,3 +53,9 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## 👨‍💻 Author
+
+Harish
+💼 MERN Stack Developer
+📍 India

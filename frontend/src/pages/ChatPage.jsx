@@ -32,12 +32,16 @@ const ChatPage = () => {
 
   const { authUser } = useAuthUser();
 
+  // 🔑 Stream token
   const { data: tokenData } = useQuery({
     queryKey: ["streamToken"],
     queryFn: getStreamToken,
-    enabled: !!authUser, // this will run only when authUser is available
+    enabled: !!authUser,
   });
 
+  /* ======================
+     INIT CHAT
+  ====================== */
   useEffect(() => {
     let isMounted = true;
     let clientInstance = null;
@@ -48,78 +52,27 @@ const ChatPage = () => {
         return;
       }
 
-      // Get or create client instance
       clientInstance = StreamChat.getInstance(STREAM_API_KEY);
 
-      // Check if already connected with same user
-      const isAlreadyConnected = clientInstance.userID === authUser._id && clientInstance.user;
-
-      if (isAlreadyConnected) {
-        // Already connected, just create channel
-        hasConnectedRef.current = true;
-        try {
-          const channelId = [authUser._id, targetUserId].sort().join("-");
-          const currChannel = clientInstance.channel("messaging", channelId, {
-            members: [authUser._id, targetUserId],
-          });
-          await currChannel.watch();
-
-          // Clear unread count when user views this chat
-          if (channelId) {
-            clearUnreadCount(channelId);
-          }
-
-          // Mark channel as read
-          await currChannel.markRead();
-
-          currChannel.on("message.new", (event) => {
-            if (event.user?.id !== authUser._id && isMounted) {
-              toast.success("New message received");
-            }
-          });
-
-          if (isMounted) {
-            setChatClient(clientInstance);
-            setChannel(currChannel);
-            setLoading(false);
-          }
-        } catch (error) {
-          console.error("Error creating channel:", error);
-          if (isMounted) {
-            toast.error("Could not create chat channel. Please try again.");
-            setLoading(false);
-          }
-        }
-        return;
-      }
-
-      // First time connection - prevent multiple calls
-      if (hasConnectedRef.current) {
-        setLoading(false);
-        return;
-      }
+      const isAlreadyConnected =
+        clientInstance.userID === authUser._id && clientInstance.user;
 
       try {
-        console.log("Initializing stream chat client...");
-        hasConnectedRef.current = true;
+        if (!isAlreadyConnected && !hasConnectedRef.current) {
+          hasConnectedRef.current = true;
 
-        // Only send image if it's not a base64 data URL (too large for WebSocket)
-        // Use a URL or empty string instead
-        let imageUrl = authUser.profilePic || "";
-        if (imageUrl.startsWith("data:image")) {
-          // Base64 images are too large for Stream WebSocket, use empty or convert to URL
-          // For now, use empty - user can upload to a CDN later if needed
-          imageUrl = "";
+          let imageUrl = authUser.profilePic || "";
+          if (imageUrl.startsWith("data:image")) imageUrl = "";
+
+          await clientInstance.connectUser(
+            {
+              id: authUser._id,
+              name: authUser.fullName,
+              image: imageUrl,
+            },
+            tokenData.token
+          );
         }
-
-        await clientInstance.connectUser(
-          {
-            id: authUser._id,
-            name: authUser.fullName,
-            image: imageUrl,
-          },
-          tokenData.token
-        );
 
         const channelId = [authUser._id, targetUserId].sort().join("-");
 
@@ -128,17 +81,9 @@ const ChatPage = () => {
         });
 
         await currChannel.watch();
-
-        // Clear unread count when user views this chat
-        const resolvedChannelId = currChannel.id || currChannel.cid;
-        if (resolvedChannelId) {
-          clearUnreadCount(resolvedChannelId);
-        }
-
-        // Mark channel as read
         await currChannel.markRead();
+        clearUnreadCount(channelId);
 
-        // Toast when a new message arrives in this chat
         currChannel.on("message.new", (event) => {
           if (event.user?.id !== authUser._id && isMounted) {
             toast.success("New message received");
@@ -147,49 +92,67 @@ const ChatPage = () => {
 
         if (isMounted) {
           setChatClient(clientInstance);
-        setChannel(currChannel);
+          setChannel(currChannel);
         }
       } catch (error) {
-        console.error("Error initializing chat:", error);
-        if (isMounted) {
-          // Check if it's a WebSocket/network error
-          const errorMessage = error.message || "";
-          if (errorMessage.includes("WS") || errorMessage.includes("WebSocket") || error.isWSFailure) {
-            toast.error("Network connection issue. Please check your internet and try refreshing the page.");
-          } else if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
-            toast.error("Authentication failed. Please log in again.");
-          } else {
-        toast.error("Could not connect to chat. Please try again.");
-          }
-          // Reset connection flag on error so user can retry
-          hasConnectedRef.current = false;
-        }
+        console.error("Chat init error:", error);
+        toast.error("Could not connect to chat");
+        hasConnectedRef.current = false;
       } finally {
-        if (isMounted) {
-        setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
     initChat();
 
-    // Cleanup on unmount or dependency change
     return () => {
       isMounted = false;
-      // Don't disconnect client here - let it persist across route changes
-      // Only cleanup channel listeners if needed
     };
   }, [tokenData, authUser, targetUserId]);
 
-  const handleVideoCall = () => {
-    if (channel) {
-      const callUrl = `${window.location.origin}/call/${channel.id}`;
+  /* ======================
+     VIDEO CALL FIX 🔥
+  ====================== */
+  const handleVideoCall = async () => {
+    try {
+      if (!authUser || !channel || !tokenData?.token) {
+        toast.error("User or Stream token not ready");
+        return;
+      }
 
-      channel.sendMessage({
+      // Same channel id = call id
+      const callId = channel.id;
+
+      // Dynamically import Stream Video client
+      const { StreamVideoClient } = await import(
+        "@stream-io/video-react-sdk"
+      );
+
+      const videoClient = new StreamVideoClient({
+        apiKey: STREAM_API_KEY,
+        user: {
+          id: authUser._id,
+          name: authUser.fullName,
+          image: authUser.profilePic || "",
+        },
+        token: tokenData.token,
+      });
+
+      // 🔥 CREATE CALL FIRST (MOST IMPORTANT)
+      const call = videoClient.call("default", callId);
+      await call.getOrCreate();
+
+      // Now send link
+      const callUrl = `${window.location.origin}/call/${callId}`;
+
+      await channel.sendMessage({
         text: `I've started a video call. Join me here: ${callUrl}`,
       });
 
-      toast.success("Video call link sent successfully!");
+      toast.success("Video call started!");
+    } catch (error) {
+      console.error("Video call error:", error);
+      toast.error("Could not start video call");
     }
   };
 
@@ -213,4 +176,5 @@ const ChatPage = () => {
     </div>
   );
 };
+
 export default ChatPage;

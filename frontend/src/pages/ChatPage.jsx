@@ -61,7 +61,7 @@ const ChatPage = () => {
         if (!isAlreadyConnected && !hasConnectedRef.current) {
           hasConnectedRef.current = true;
 
-          // 🔥 BASE64 IMAGE FIX (VERY IMPORTANT)
+          // 🔥 BASE64 IMAGE FIX
           let imageUrl = authUser.profilePic || "";
           if (imageUrl.startsWith("data:image")) {
             imageUrl = "";
@@ -114,7 +114,7 @@ const ChatPage = () => {
   }, [tokenData, authUser, targetUserId]);
 
   /* =========================
-     VIDEO CALL (FIXED 🔥)
+     VIDEO CALL (FINAL FIX 🔥)
   ========================= */
   const handleVideoCall = async () => {
     try {
@@ -123,13 +123,17 @@ const ChatPage = () => {
         return;
       }
 
-      const callId = channel.id;
+      // ✅ FIX: remove "messaging:" prefix
+      const rawChannelId = channel.id;
+      const callId = rawChannelId.includes(":")
+        ? rawChannelId.split(":")[1]
+        : rawChannelId;
 
       const { StreamVideoClient } = await import(
         "@stream-io/video-react-sdk"
       );
 
-      // 🔥 BASE64 IMAGE FIX AGAIN (VERY IMPORTANT)
+      // 🔥 BASE64 IMAGE FIX
       let imageUrl = authUser.profilePic || "";
       if (imageUrl.startsWith("data:image")) {
         imageUrl = "";
@@ -145,7 +149,7 @@ const ChatPage = () => {
         token: tokenData.token,
       });
 
-      // 🔥 CREATE CALL BEFORE SHARING LINK
+      // 🔥 CREATE CALL FIRST
       const call = videoClient.call("default", callId);
       await call.getOrCreate();
 

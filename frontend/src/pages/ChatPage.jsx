@@ -139,36 +139,32 @@ const ChatPage = () => {
 
 
 
-  return (
-  <div className="full-height w-full flex flex-col overflow-hidden">
-
+ return (
+  <div className="h-screen w-screen flex flex-col overflow-hidden bg-base-100">
     <Chat client={chatClient}>
       <Channel channel={channel}>
-        <div className="flex flex-col flex-1 overflow-hidden relative w-full">
-
+        <div className="flex flex-col flex-1 overflow-hidden w-full">
           <CallButton handleVideoCall={handleVideoCall} />
 
-          <Window>
-            <ChannelHeader />
-
-            {/* Message list should scroll */}
-            <div className="flex-1 overflow-y-auto">
+          <Window className="flex flex-col flex-1">
+            {/* Messages scroll here */}
+            <div className="flex-1 overflow-y-auto px-2 pb-2">
               <MessageList />
             </div>
 
-            {/* Input always at bottom */}
-            <div className="sticky bottom-0 bg-base-100 w-full px-2">
-
+            {/* Always fixed at bottom */}
+            <div className="sticky bottom-0 bg-base-100 p-2">
               <MessageInput focus />
             </div>
           </Window>
-        </div>
 
+        </div>
         <Thread />
       </Channel>
     </Chat>
   </div>
 );
+
 
 };
 

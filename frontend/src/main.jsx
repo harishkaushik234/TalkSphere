@@ -20,8 +20,20 @@ if (typeof window !== "undefined") {
     originalLog(...args);
   };
 }
-
 const queryClient = new QueryClient();
+
+
+
+const setVH = () => {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty("--vh", `${vh}px`);
+};
+
+setVH();
+window.addEventListener("resize", setVH);
+
+
+
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

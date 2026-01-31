@@ -119,23 +119,54 @@ const ChatPage = () => {
 
   if (loading || !chatClient || !channel) return <ChatLoader />;
 
+  // return (
+  //   <div className="h-[93vh]">
+  //     <Chat client={chatClient}>
+  //       <Channel channel={channel}>
+  //         <div className="w-full relative">
+  //           <CallButton handleVideoCall={handleVideoCall} />
+  //           <Window>
+  //             <ChannelHeader />
+  //             <MessageList />
+  //             <MessageInput focus />
+  //           </Window>
+  //         </div>
+  //         <Thread />
+  //       </Channel>
+  //     </Chat>
+  //   </div>
+  // );
+
+
+
   return (
-    <div className="h-[93vh]">
-      <Chat client={chatClient}>
-        <Channel channel={channel}>
-          <div className="w-full relative">
-            <CallButton handleVideoCall={handleVideoCall} />
-            <Window>
-              <ChannelHeader />
+  <div className="full-height flex flex-col overflow-hidden">
+    <Chat client={chatClient}>
+      <Channel channel={channel}>
+        <div className="flex flex-col flex-1 overflow-hidden relative">
+          <CallButton handleVideoCall={handleVideoCall} />
+
+          <Window>
+            <ChannelHeader />
+
+            {/* Message list should scroll */}
+            <div className="flex-1 overflow-y-auto">
               <MessageList />
+            </div>
+
+            {/* Input always at bottom */}
+            <div className="sticky bottom-0 bg-base-100">
               <MessageInput focus />
-            </Window>
-          </div>
-          <Thread />
-        </Channel>
-      </Chat>
-    </div>
-  );
+            </div>
+          </Window>
+        </div>
+
+        <Thread />
+      </Channel>
+    </Chat>
+  </div>
+);
+
 };
 
 export default ChatPage;

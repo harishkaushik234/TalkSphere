@@ -6,7 +6,9 @@ const Layout = ({ children, showSidebar = false }) => {
   // Initialize global unread tracking (runs the hook to connect and populate unreadCounts)
   useUnreadMessages();
   return (
-    <div className="min-h-screen">
+    // <div className="min-h-screen">
+    <div className="full-height flex flex-col overflow-hidden">
+
       <div className="flex">
         {showSidebar && <Sidebar />}
 

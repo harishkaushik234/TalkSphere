@@ -32,7 +32,6 @@ const CallPage = () => {
   const [call, setCall] = useState(null);
   const [connecting, setConnecting] = useState(true);
 
-  // 🔑 Stream token
   const { data: tokenData } = useQuery({
     queryKey: ["streamToken"],
     queryFn: getStreamToken,
@@ -42,12 +41,11 @@ const CallPage = () => {
   useEffect(() => {
     if (!authUser) {
       navigate("/login");
-      return;
     }
   }, [authUser, navigate]);
 
   useEffect(() => {
-    const startCall = async () => {
+    const joinCall = async () => {
       if (!authUser || !tokenData?.token || !callId) {
         setConnecting(false);
         return;
@@ -59,29 +57,28 @@ const CallPage = () => {
           user: {
             id: authUser._id,
             name: authUser.fullName,
-            image: authUser.profilePic || "",
+            image: "", // 🔥 MUST BE EMPTY (NO BASE64)
           },
           token: tokenData.token,
         });
 
         const callInstance = videoClient.call("default", callId);
 
-        // 🔥 MOST IMPORTANT PART
-        await callInstance.getOrCreate();
-        await callInstance.join();
+        // ✅ create or join safely
+        await callInstance.join({ create: true });
 
         setClient(videoClient);
         setCall(callInstance);
-      } catch (error) {
-        console.error(error);
-        toast.error("Unable to join video call");
+      } catch (err) {
+        console.error("Call join error:", err);
+        toast.error("Could not start call");
         navigate("/");
       } finally {
         setConnecting(false);
       }
     };
 
-    startCall();
+    joinCall();
   }, [authUser, tokenData, callId, navigate]);
 
   if (isLoading || connecting) return <PageLoader />;

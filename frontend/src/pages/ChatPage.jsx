@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
-import useAuthUser from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+
+import useAuthUser from "../hooks/useAuthUser";
 import { getStreamToken } from "../lib/api";
 
 import {
@@ -14,7 +16,6 @@ import {
   Window,
 } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
-import toast from "react-hot-toast";
 
 import ChatLoader from "../components/ChatLoader";
 import CallButton from "../components/CallButton";
@@ -32,46 +33,33 @@ const ChatPage = () => {
 
   const { authUser } = useAuthUser();
 
-  // 🔑 Stream token
   const { data: tokenData } = useQuery({
     queryKey: ["streamToken"],
     queryFn: getStreamToken,
     enabled: !!authUser,
   });
 
-  /* =========================
-     INIT STREAM CHAT
-  ========================= */
   useEffect(() => {
     let isMounted = true;
-    let clientInstance = null;
+    let client;
 
     const initChat = async () => {
-      if (!tokenData?.token || !authUser || !targetUserId) {
+      if (!authUser || !tokenData?.token || !targetUserId) {
         setLoading(false);
         return;
       }
 
-      clientInstance = StreamChat.getInstance(STREAM_API_KEY);
-
-      const isAlreadyConnected =
-        clientInstance.userID === authUser._id && clientInstance.user;
+      client = StreamChat.getInstance(STREAM_API_KEY);
 
       try {
-        if (!isAlreadyConnected && !hasConnectedRef.current) {
+        if (!client.userID && !hasConnectedRef.current) {
           hasConnectedRef.current = true;
 
-          // 🔥 BASE64 IMAGE FIX
-          let imageUrl = authUser.profilePic || "";
-          if (imageUrl.startsWith("data:image")) {
-            imageUrl = "";
-          }
-
-          await clientInstance.connectUser(
+          await client.connectUser(
             {
               id: authUser._id,
               name: authUser.fullName,
-              image: imageUrl,
+              image: "", // 🔥 MUST BE EMPTY
             },
             tokenData.token
           );
@@ -79,7 +67,7 @@ const ChatPage = () => {
 
         const channelId = [authUser._id, targetUserId].sort().join("-");
 
-        const currChannel = clientInstance.channel("messaging", channelId, {
+        const currChannel = client.channel("messaging", channelId, {
           members: [authUser._id, targetUserId],
         });
 
@@ -87,18 +75,12 @@ const ChatPage = () => {
         await currChannel.markRead();
         clearUnreadCount(channelId);
 
-        currChannel.on("message.new", (event) => {
-          if (event.user?.id !== authUser._id && isMounted) {
-            toast.success("New message received");
-          }
-        });
-
         if (isMounted) {
-          setChatClient(clientInstance);
+          setChatClient(client);
           setChannel(currChannel);
         }
-      } catch (error) {
-        console.error("Chat init error:", error);
+      } catch (err) {
+        console.error("Chat error:", err);
         toast.error("Could not connect to chat");
         hasConnectedRef.current = false;
       } finally {
@@ -111,47 +93,16 @@ const ChatPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [tokenData, authUser, targetUserId]);
+  }, [authUser, tokenData, targetUserId]);
 
-  /* =========================
-     VIDEO CALL (FINAL FIX 🔥)
-  ========================= */
+  // 🔥 VIDEO CALL LINK (SAFE)
   const handleVideoCall = async () => {
     try {
-      if (!authUser || !channel || !tokenData?.token) {
-        toast.error("User or Stream token not ready");
-        return;
-      }
+      if (!channel) return;
 
-      // ✅ FIX: remove "messaging:" prefix
-      const rawChannelId = channel.id;
-      const callId = rawChannelId.includes(":")
-        ? rawChannelId.split(":")[1]
-        : rawChannelId;
-
-      const { StreamVideoClient } = await import(
-        "@stream-io/video-react-sdk"
-      );
-
-      // 🔥 BASE64 IMAGE FIX
-      let imageUrl = authUser.profilePic || "";
-      if (imageUrl.startsWith("data:image")) {
-        imageUrl = "";
-      }
-
-      const videoClient = new StreamVideoClient({
-        apiKey: STREAM_API_KEY,
-        user: {
-          id: authUser._id,
-          name: authUser.fullName,
-          image: imageUrl,
-        },
-        token: tokenData.token,
-      });
-
-      // 🔥 CREATE CALL FIRST
-      const call = videoClient.call("default", callId);
-      await call.getOrCreate();
+      // ✅ remove "messaging:" if present
+      const rawId = channel.id;
+      const callId = rawId.includes(":") ? rawId.split(":")[1] : rawId;
 
       const callUrl = `${window.location.origin}/call/${callId}`;
 
@@ -159,9 +110,9 @@ const ChatPage = () => {
         text: `I've started a video call. Join me here: ${callUrl}`,
       });
 
-      toast.success("Video call started!");
-    } catch (error) {
-      console.error("Video call error:", error);
+      toast.success("Video call link sent");
+    } catch (err) {
+      console.error("Video call link error:", err);
       toast.error("Could not start video call");
     }
   };

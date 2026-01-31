@@ -140,10 +140,12 @@ const ChatPage = () => {
 
 
   return (
-  <div className="full-height flex flex-col overflow-hidden">
+  <div className="full-height w-full flex flex-col overflow-hidden">
+
     <Chat client={chatClient}>
       <Channel channel={channel}>
-        <div className="flex flex-col flex-1 overflow-hidden relative">
+        <div className="flex flex-col flex-1 overflow-hidden relative w-full">
+
           <CallButton handleVideoCall={handleVideoCall} />
 
           <Window>
@@ -155,7 +157,8 @@ const ChatPage = () => {
             </div>
 
             {/* Input always at bottom */}
-            <div className="sticky bottom-0 bg-base-100">
+            <div className="sticky bottom-0 bg-base-100 w-full px-2">
+
               <MessageInput focus />
             </div>
           </Window>

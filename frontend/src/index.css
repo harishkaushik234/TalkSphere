@@ -55,3 +55,39 @@ body,
 .str-chat__message-input {
   border-top: 1px solid #ddd;
 }
+
+
+
+
+/* ===== Stream Chat Mobile Fix ===== */
+
+/* Message list full width */
+.str-chat__list {
+  width: 100% !important;
+}
+
+/* Individual message wrapper */
+.str-chat__message-simple {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Message bubble */
+.str-chat__message-text {
+  max-width: 90% !important;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* My messages (right side) */
+.str-chat__message--me .str-chat__message-text {
+  margin-left: auto;
+  background-color: #4f46e5;
+  /* optional: highlight */
+  color: white;
+}
+
+/* Other user messages */
+.str-chat__message--other .str-chat__message-text {
+  margin-right: auto;
+}

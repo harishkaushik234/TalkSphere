@@ -39,9 +39,9 @@ const ChatPage = () => {
     enabled: !!authUser,
   });
 
-  /* ======================
-     INIT CHAT
-  ====================== */
+  /* =========================
+     INIT STREAM CHAT
+  ========================= */
   useEffect(() => {
     let isMounted = true;
     let clientInstance = null;
@@ -61,8 +61,11 @@ const ChatPage = () => {
         if (!isAlreadyConnected && !hasConnectedRef.current) {
           hasConnectedRef.current = true;
 
+          // 🔥 BASE64 IMAGE FIX (VERY IMPORTANT)
           let imageUrl = authUser.profilePic || "";
-          if (imageUrl.startsWith("data:image")) imageUrl = "";
+          if (imageUrl.startsWith("data:image")) {
+            imageUrl = "";
+          }
 
           await clientInstance.connectUser(
             {
@@ -110,9 +113,9 @@ const ChatPage = () => {
     };
   }, [tokenData, authUser, targetUserId]);
 
-  /* ======================
-     VIDEO CALL FIX 🔥
-  ====================== */
+  /* =========================
+     VIDEO CALL (FIXED 🔥)
+  ========================= */
   const handleVideoCall = async () => {
     try {
       if (!authUser || !channel || !tokenData?.token) {
@@ -120,29 +123,32 @@ const ChatPage = () => {
         return;
       }
 
-      // Same channel id = call id
       const callId = channel.id;
 
-      // Dynamically import Stream Video client
       const { StreamVideoClient } = await import(
         "@stream-io/video-react-sdk"
       );
+
+      // 🔥 BASE64 IMAGE FIX AGAIN (VERY IMPORTANT)
+      let imageUrl = authUser.profilePic || "";
+      if (imageUrl.startsWith("data:image")) {
+        imageUrl = "";
+      }
 
       const videoClient = new StreamVideoClient({
         apiKey: STREAM_API_KEY,
         user: {
           id: authUser._id,
           name: authUser.fullName,
-          image: authUser.profilePic || "",
+          image: imageUrl,
         },
         token: tokenData.token,
       });
 
-      // 🔥 CREATE CALL FIRST (MOST IMPORTANT)
+      // 🔥 CREATE CALL BEFORE SHARING LINK
       const call = videoClient.call("default", callId);
       await call.getOrCreate();
 
-      // Now send link
       const callUrl = `${window.location.origin}/call/${callId}`;
 
       await channel.sendMessage({

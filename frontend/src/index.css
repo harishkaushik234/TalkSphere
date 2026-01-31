@@ -2,143 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =========================
-   GLOBAL RESET
-========================= */
-html,
-body,
-#root {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-/* =========================
-   MOBILE VH FIX
-========================= */
-:root {
-  --vh: 1vh;
-}
-
-.full-height {
-  height: calc(var(--vh) * 100);
-}
-
-/* =========================
-   STREAM CHAT LAYOUT
-========================= */
 .str-chat__channel {
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(to bottom, #c9e8c9, #b7e7bb);
   height: 100%;
-  width: 100%;
 }
 
-/* Main chat container */
 .str-chat__container {
-  width: 100% !important;
   max-width: 1200px;
-  height: 100% !important;
+  width: 100%;
+  height: 80% !important;
   margin: 0 auto !important;
   border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  background: white;
 }
 
-/* =========================
-   MESSAGE LIST
-========================= */
 .str-chat__list {
-  width: 100% !important;
-  padding: 0.75rem !important;
   background-color: #ffffff;
+  padding: 12px;
 }
 
-/* Hide notification banner */
 .str-chat__list-notifications {
   display: none;
 }
 
-/* =========================
-   MESSAGE WRAPPERS
-========================= */
-.str-chat__message-simple {
-  width: 100% !important;
-  max-width: 100% !important;
-  display: flex;
-}
-
-/* Message bubble */
-.str-chat__message-text,
-.str-chat__message-simple__content {
-  max-width: 85% !important;
-  padding: 0.6rem 0.75rem;
-  border-radius: 12px;
-  word-break: break-word !important;
-  white-space: pre-wrap !important;
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-/* =========================
-   MY MESSAGES (RIGHT SIDE)
-========================= */
-.str-chat__message--me {
-  justify-content: flex-end;
-}
-
-.str-chat__message--me .str-chat__message-simple__content {
-  margin-left: auto !important;
-  background-color: #4f46e5;
-  color: #ffffff;
-}
-
-/* =========================
-   OTHER USER MESSAGES
-========================= */
-.str-chat__message--other {
-  justify-content: flex-start;
-}
-
-.str-chat__message--other .str-chat__message-simple__content {
-  margin-right: auto !important;
-  background-color: #f3f4f6;
-  color: #111827;
-}
-
-/* =========================
-   MESSAGE INPUT (BOTTOM FIX)
-========================= */
-.str-chat__message-input,
-.str-chat__input-flat {
-  position: sticky !important;
-  bottom: 0 !important;
-  width: 100% !important;
-  background: #ffffff !important;
-  border-top: 1px solid #e5e7eb;
-  z-index: 10;
-}
-
-/* =========================
-   MOBILE OPTIMIZATION
-========================= */
-@media (max-width: 640px) {
-  .str-chat__container {
-    height: 100% !important;
-    border-radius: 0;
-  }
-
-  .str-chat__message-text,
-  .str-chat__message-simple__content {
-    max-width: 92% !important;
-    font-size: 0.9rem;
-  }
-
-  .str-chat__list {
-    padding: 0.5rem !important;
-  }
+.str-chat__message-input {
+  border-top: 1px solid #ddd;
 }

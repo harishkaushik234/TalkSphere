@@ -87,24 +87,13 @@ const CallPage = () => {
     return <p className="text-center">Could not start call</p>;
   }
 
-  // return (
-  //   <StreamVideo client={client}>
-  //     <StreamCall call={call}>
-  //       <CallContent />
-  //     </StreamCall>
-  //   </StreamVideo>
-  // );
-
-
   return (
-  <div className="full-height overflow-hidden">
     <StreamVideo client={client}>
       <StreamCall call={call}>
         <CallContent />
       </StreamCall>
     </StreamVideo>
-  </div>
-);
+  );
 };
 
 const CallContent = () => {
